@@ -77,7 +77,7 @@ export default function ExerciseStats() {
       <div className="card">
         <h2 className="mb-2 font-semibold text-gray-900 dark:text-white">Top working weight over time</h2>
         <ProgressChart data={series} xKey="date"
-                       lines={[{ key: 'top_weight', name: 'Top weight', color: '#3758F9' }]} />
+                       lines={[{ key: 'top_weight', name: 'Top weight', color: '#D97757' }]} />
       </div>
 
       <div className="card">

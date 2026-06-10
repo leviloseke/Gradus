@@ -16,8 +16,8 @@ export default function ProgressChart({ data, xKey, lines, height = 280 }) {
     );
   }
 
-  const gridColor = dark ? '#374151' : '#e5e7eb';
-  const tickColor = dark ? '#9CA3AF' : '#6b7280';
+  const gridColor = dark ? '#3E3E3A' : '#E8E6DC';
+  const tickColor = dark ? '#9B9A93' : '#87867F';
 
   return (
     <ResponsiveContainer width="100%" height={height}>
@@ -27,13 +27,13 @@ export default function ProgressChart({ data, xKey, lines, height = 280 }) {
         <YAxis tick={{ fontSize: 12, fill: tickColor }} stroke={gridColor} domain={['auto', 'auto']} />
         <Tooltip
           contentStyle={{
-            backgroundColor: dark ? '#1F2A37' : '#ffffff',
-            border: `1px solid ${dark ? '#374151' : '#DFE4EA'}`,
+            backgroundColor: dark ? '#30302E' : '#ffffff',
+            border: `1px solid ${dark ? '#3E3E3A' : '#E8E6DC'}`,
             borderRadius: '0.75rem',
-            color: dark ? '#E5E7EB' : '#111928',
+            color: dark ? '#E8E6DC' : '#21201C',
             fontSize: 13,
           }}
-          labelStyle={{ color: dark ? '#9CA3AF' : '#637381' }}
+          labelStyle={{ color: dark ? '#9B9A93' : '#6B6A63' }}
         />
         {lines.map((l) => (
           <Line
@@ -41,9 +41,9 @@ export default function ProgressChart({ data, xKey, lines, height = 280 }) {
             type="monotone"
             dataKey={l.key}
             name={l.name}
-            stroke={l.color || '#3758F9'}
+            stroke={l.color || '#D97757'}
             strokeWidth={2}
-            dot={{ r: 3, strokeWidth: 0, fill: l.color || '#3758F9' }}
+            dot={{ r: 3, strokeWidth: 0, fill: l.color || '#D97757' }}
             activeDot={{ r: 5 }}
           />
         ))}

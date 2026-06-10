@@ -81,7 +81,7 @@ export default function BodyWeight() {
       <div className="card">
         <h2 className="mb-2 font-semibold text-gray-900 dark:text-white">Trend</h2>
         <ProgressChart data={series} xKey="date"
-                       lines={[{ key: 'weight', name: 'Weight', color: '#3758F9' }]} />
+                       lines={[{ key: 'weight', name: 'Weight', color: '#D97757' }]} />
       </div>
 
       {loading ? (
