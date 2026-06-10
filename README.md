@@ -2,7 +2,22 @@
 
 A self-hosted, multi-user workout tracker built around **progressive overload**. Configure each exercise once (warm-up scheme, working sets, rep range, progression rule) — then just log your sets and let Gradus calculate warm-up weights and suggest next-session progression.
 
-## Quick start
+## Quick start (prebuilt images)
+
+No source checkout needed — images for amd64 and arm64 are published to GitHub Container Registry on every release:
+
+```bash
+curl -O https://raw.githubusercontent.com/leviloseke/Gradus/main/docker-compose.prebuilt.yml
+curl -o .env https://raw.githubusercontent.com/leviloseke/Gradus/main/.env.example
+# edit .env: set POSTGRES_PASSWORD and JWT_SECRET (openssl rand -hex 32)
+docker compose -f docker-compose.prebuilt.yml up -d
+```
+
+Open http://localhost:3000. To update later: `docker compose -f docker-compose.prebuilt.yml pull && docker compose -f docker-compose.prebuilt.yml up -d`.
+
+Images: [`ghcr.io/leviloseke/gradus-frontend`](https://github.com/leviloseke/Gradus/pkgs/container/gradus-frontend) · [`ghcr.io/leviloseke/gradus-backend`](https://github.com/leviloseke/Gradus/pkgs/container/gradus-backend) — tagged `latest`, plus `vX.Y.Z` and commit SHAs for pinning.
+
+## Quick start (from source)
 
 ```bash
 cp .env.example .env   # set JWT_SECRET and a real POSTGRES_PASSWORD
