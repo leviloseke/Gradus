@@ -1,3 +1,5 @@
+import Icon from './Icon';
+
 const styles = {
   increase:
     'bg-green-50 text-green-800 dark:bg-green-500/10 dark:text-green-300',
@@ -7,18 +9,18 @@ const styles = {
   start: 'bg-primary-50 text-primary-800 dark:bg-primary-500/10 dark:text-primary-300',
 };
 
-const prefix = {
-  increase: '🎉 ',
-  backoff: '↘️ ',
+const icons = {
+  increase: 'trending-up',
+  backoff: 'trending-down',
 };
 
 export default function ProgressionBanner({ suggestion }) {
   if (!suggestion) return null;
   const action = suggestion.action || (suggestion.triggered ? 'increase' : 'hold');
   return (
-    <div className={`rounded-lg px-3 py-2 text-sm ${styles[action] || styles.hold}`}>
-      {prefix[action] || ''}
-      {suggestion.reason}
+    <div className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm ${styles[action] || styles.hold}`}>
+      {icons[action] && <Icon name={icons[action]} className="h-4 w-4 shrink-0" />}
+      <span>{suggestion.reason}</span>
     </div>
   );
 }

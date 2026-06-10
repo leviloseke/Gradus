@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api';
+import Icon from '../components/Icon';
 
 function CalendarView({ sessions, month, setMonth }) {
   const byDate = useMemo(() => {
@@ -26,16 +27,16 @@ function CalendarView({ sessions, month, setMonth }) {
   return (
     <div className="card">
       <div className="mb-3 flex items-center justify-between">
-        <button className="btn-secondary !px-2 !py-1 text-xs"
+        <button className="btn-secondary !px-2 !py-1 text-xs" aria-label="Previous month"
                 onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}>
-          ←
+          <Icon name="chevron-left" className="h-4 w-4" />
         </button>
         <p className="font-semibold text-gray-900 dark:text-white">
           {month.toLocaleString('default', { month: 'long', year: 'numeric' })}
         </p>
-        <button className="btn-secondary !px-2 !py-1 text-xs"
+        <button className="btn-secondary !px-2 !py-1 text-xs" aria-label="Next month"
                 onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}>
-          →
+          <Icon name="chevron-right" className="h-4 w-4" />
         </button>
       </div>
       <div className="grid grid-cols-7 gap-1 text-center text-xs text-gray-400 dark:text-gray-500">

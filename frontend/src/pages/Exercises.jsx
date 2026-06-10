@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api';
+import Icon from '../components/Icon';
 
 const emptyForm = {
   name: '',
@@ -102,7 +103,7 @@ export default function Exercises() {
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Exercises</h1>
         <button className="btn-primary"
                 onClick={() => { setForm({ ...emptyForm }); setEditingId(null); }}>
-          + New Exercise
+          <Icon name="plus" className="h-4 w-4" /> New Exercise
         </button>
       </div>
 
@@ -143,15 +144,15 @@ export default function Exercises() {
                 <span className="text-sm text-gray-500 dark:text-gray-400">
                   % = <strong>{round((previewWeight * w.percentage) / 100)} {form.unit}</strong>
                 </span>
-                <button type="button" className="btn-danger ml-auto"
+                <button type="button" className="btn-danger ml-auto" aria-label="Remove warm-up set"
                         onClick={() => setForm({ ...form, warmups: form.warmups.filter((_, j) => j !== i) })}>
-                  ✕
+                  <Icon name="x-mark" className="h-4 w-4" />
                 </button>
               </div>
             ))}
             <button type="button" className="btn-secondary text-xs"
                     onClick={() => setForm({ ...form, warmups: [...form.warmups, { reps: 5, percentage: 70 }] })}>
-              + Add warm-up set
+              <Icon name="plus" className="h-3.5 w-3.5" /> Add warm-up set
             </button>
           </div>
 
@@ -233,8 +234,9 @@ export default function Exercises() {
                                 className="btn-secondary !px-2 !py-1 text-xs">
                           Edit
                         </button>
-                        <button onClick={() => remove(t.id)} className="btn-danger !px-2 !py-1 text-xs">
-                          ✕
+                        <button onClick={() => remove(t.id)} className="btn-danger !px-2 !py-1 text-xs"
+                                aria-label={`Delete ${t.name}`}>
+                          <Icon name="trash" className="h-4 w-4" />
                         </button>
                       </>
                     )}

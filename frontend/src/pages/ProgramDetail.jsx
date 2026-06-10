@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../api';
+import Icon from '../components/Icon';
 
 export default function ProgramDetail() {
   const { id } = useParams();
@@ -63,8 +64,8 @@ export default function ProgramDetail() {
   return (
     <div className="space-y-6">
       <div>
-        <Link to="/programs" className="text-sm text-primary-600 dark:text-primary-400 hover:underline">
-          ← Programs
+        <Link to="/programs" className="inline-flex items-center gap-1 text-sm text-primary-600 dark:text-primary-400 hover:underline">
+          <Icon name="arrow-left" className="h-3.5 w-3.5" /> Programs
         </Link>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{program.name}</h1>
         {program.description && <p className="text-gray-600 dark:text-gray-300">{program.description}</p>}
@@ -87,8 +88,14 @@ export default function ProgramDetail() {
               {day.name}
             </h2>
             <div className="flex gap-2">
-              <button onClick={() => moveDay(day, -1)} className="btn-secondary !px-2 !py-1 text-xs">↑</button>
-              <button onClick={() => moveDay(day, 1)} className="btn-secondary !px-2 !py-1 text-xs">↓</button>
+              <button onClick={() => moveDay(day, -1)} className="btn-secondary !px-2 !py-1 text-xs"
+                      aria-label="Move day up">
+                <Icon name="chevron-up" className="h-4 w-4" />
+              </button>
+              <button onClick={() => moveDay(day, 1)} className="btn-secondary !px-2 !py-1 text-xs"
+                      aria-label="Move day down">
+                <Icon name="chevron-down" className="h-4 w-4" />
+              </button>
               <button onClick={() => removeDay(day.id)} className="btn-danger">Delete</button>
             </div>
           </div>
@@ -142,7 +149,7 @@ export default function ProgramDetail() {
             </form>
           ) : (
             <button onClick={() => setAdding(day.id)} className="btn-secondary">
-              + Add exercise
+              <Icon name="plus" className="h-4 w-4" /> Add exercise
             </button>
           )}
         </div>

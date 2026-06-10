@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../api';
 import ProgressChart from '../components/ProgressChart';
+import Icon from '../components/Icon';
 
 export default function ExerciseStats() {
   const { id } = useParams();
@@ -25,8 +26,8 @@ export default function ExerciseStats() {
   return (
     <div className="space-y-6">
       <div>
-        <Link to="/exercises" className="text-sm text-primary-600 dark:text-primary-400 hover:underline">
-          ← Exercises
+        <Link to="/exercises" className="inline-flex items-center gap-1 text-sm text-primary-600 dark:text-primary-400 hover:underline">
+          <Icon name="arrow-left" className="h-3.5 w-3.5" /> Exercises
         </Link>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{stats.exercise.name}</h1>
       </div>

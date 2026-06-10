@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import ProgressChart from '../components/ProgressChart';
+import Icon from '../components/Icon';
 
 export default function BodyWeight() {
   const [entries, setEntries] = useState([]);
@@ -65,7 +66,9 @@ export default function BodyWeight() {
                 <span className="ml-3 text-sm text-gray-500 dark:text-gray-400">{e.log_date?.slice(0, 10)}</span>
                 {e.notes && <span className="ml-3 text-sm text-gray-400 dark:text-gray-500">{e.notes}</span>}
               </div>
-              <button onClick={() => remove(e.id)} className="btn-danger">✕</button>
+              <button onClick={() => remove(e.id)} className="btn-danger" aria-label="Delete entry">
+                <Icon name="trash" className="h-4 w-4" />
+              </button>
             </li>
           ))}
         </ul>

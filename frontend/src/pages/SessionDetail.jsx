@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api';
+import Icon from '../components/Icon';
 
 export default function SessionDetail() {
   const { id } = useParams();
@@ -28,8 +29,8 @@ export default function SessionDetail() {
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <Link to="/history" className="text-sm text-primary-600 dark:text-primary-400 hover:underline">
-            ← History
+          <Link to="/history" className="inline-flex items-center gap-1 text-sm text-primary-600 dark:text-primary-400 hover:underline">
+            <Icon name="arrow-left" className="h-3.5 w-3.5" /> History
           </Link>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             {session.day_name || 'Freestyle'}{' '}

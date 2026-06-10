@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api';
 import RestTimer from '../components/RestTimer';
 import ProgressionBanner from '../components/ProgressionBanner';
+import Icon from '../components/Icon';
 
 const round = (w) => Math.round(w / 2.5) * 2.5;
 
@@ -50,7 +51,11 @@ function SetRow({ planned, logged, isMaxEffort, onLog, onUpdate, unit }) {
       <div className="flex items-center gap-2">
         <span className="w-16 shrink-0 text-xs font-medium text-gray-500 dark:text-gray-400">
           {planned.set_type === 'warmup' ? `W${planned.set_number}` : `Set ${planned.set_number}`}
-          {isMaxEffort && <span className="ml-1 text-amber-600 dark:text-amber-400" title="Max effort">★</span>}
+          {isMaxEffort && (
+            <span className="ml-1 inline-flex align-text-bottom text-amber-600 dark:text-amber-400" title="Max effort" aria-label="Max effort">
+              <Icon name="star" solid className="h-3.5 w-3.5" />
+            </span>
+          )}
         </span>
         <input className="input !w-20 !px-2 text-center" type="number" step="2.5" inputMode="decimal"
                value={weight} onChange={(e) => setWeight(e.target.value)} placeholder={unit} />
@@ -62,8 +67,8 @@ function SetRow({ planned, logged, isMaxEffort, onLog, onUpdate, unit }) {
           {logged ? 'Update' : 'Log'}
         </button>
         <button onClick={() => setShowExtra(!showExtra)}
-                className="ml-auto text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
-          {showExtra ? '−' : '+'} RPE/notes
+                className="ml-auto inline-flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
+          <Icon name={showExtra ? 'minus' : 'plus'} className="h-3 w-3" /> RPE/notes
         </button>
       </div>
       {showExtra && (
@@ -183,9 +188,7 @@ export default function WorkoutSession() {
             title="Leave workout (progress is saved)"
             className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-dark-2 dark:hover:text-white"
           >
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-            </svg>
+            <Icon name="chevron-left" className="h-5 w-5" />
           </button>
           <div className="min-w-0 text-center">
             <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">Workout</p>
@@ -222,7 +225,10 @@ export default function WorkoutSession() {
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 pb-32">
         {plan.deload_hint?.recommended && !isDeload && (
           <div className="mb-4 flex flex-col gap-2 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300 sm:flex-row sm:items-center sm:justify-between">
-            <p>💤 {plan.deload_hint.reason}</p>
+            <p className="flex items-center gap-2">
+              <Icon name="moon" className="h-4 w-4 shrink-0" />
+              {plan.deload_hint.reason}
+            </p>
             <button
               onClick={toggleDeload}
               className="shrink-0 rounded-lg border border-amber-400 px-3 py-1.5 text-xs font-medium text-amber-700 transition hover:bg-amber-100 dark:border-amber-500/40 dark:text-amber-300 dark:hover:bg-amber-500/20"
@@ -342,7 +348,7 @@ export default function WorkoutSession() {
               disabled={current === 0}
               className="btn-secondary !px-4"
             >
-              ← Prev
+              <Icon name="chevron-left" className="h-4 w-4" /> Prev
             </button>
             <div className="flex items-center gap-2">
               {exercises.map((e, i) => (
@@ -362,14 +368,14 @@ export default function WorkoutSession() {
             </div>
             {last ? (
               <button onClick={finish} className="btn-primary !px-4">
-                Finish ✓
+                Finish <Icon name="check" className="h-4 w-4" />
               </button>
             ) : (
               <button
                 onClick={() => setCurrent((c) => Math.min(c + 1, exercises.length - 1))}
                 className="btn-primary !px-4"
               >
-                Next →
+                Next <Icon name="chevron-right" className="h-4 w-4" />
               </button>
             )}
           </div>
