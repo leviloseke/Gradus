@@ -1,4 +1,7 @@
 import 'dotenv/config';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
@@ -37,6 +40,17 @@ app.get('/api/health/sync-status', requireAuth, (req, res) =>
   res.json({ connected: false, last_sync: null }));
 app.post('/api/health/sync', requireAuth, (req, res) =>
   res.status(501).json({ error: 'Health integration not yet implemented' }));
+
+// In production the frontend build is copied into ./public — serve it from
+// the same origin so no separate web server or /api proxy is needed.
+const staticDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../public');
+if (fs.existsSync(staticDir)) {
+  app.use(express.static(staticDir));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api/')) return next();
+    res.sendFile(path.join(staticDir, 'index.html'));
+  });
+}
 
 app.use((err, req, res, next) => {
   console.error(err);

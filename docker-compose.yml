@@ -16,8 +16,9 @@ services:
       timeout: 5s
       retries: 10
 
-  backend:
-    build: ./backend
+  # Single container: Express serves both the API and the built frontend.
+  app:
+    build: .
     restart: unless-stopped
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-gradus}:${POSTGRES_PASSWORD:-gradus}@postgres:5432/${POSTGRES_DB:-gradus}
@@ -30,16 +31,9 @@ services:
       postgres:
         condition: service_healthy
     ports:
-      # 5001 on the host: macOS AirPlay Receiver occupies 5000
+      - "3000:5000"
+      # 5001 on the host for the Vite dev proxy: macOS AirPlay Receiver occupies 5000
       - "5001:5000"
-
-  frontend:
-    build: ./frontend
-    restart: unless-stopped
-    depends_on:
-      - backend
-    ports:
-      - "3000:80"
 
 volumes:
   postgres_data:
