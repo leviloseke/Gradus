@@ -53,8 +53,8 @@ function SetRow({ planned, logged, isMaxEffort, onLog, onUpdate, unit }) {
             : 'border-gray-200 bg-white dark:border-dark-3 dark:bg-dark-3/40'
       }`}
     >
-      <div className="flex items-center gap-2">
-        <span className="w-16 shrink-0 text-xs font-medium text-gray-500 dark:text-gray-400">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
           {planned.set_type === 'warmup' ? `W${planned.set_number}` : `Set ${planned.set_number}`}
           {isMaxEffort && (
             <span className="ml-1 inline-flex align-text-bottom text-amber-600 dark:text-amber-400" title="Max effort" aria-label="Max effort">
@@ -62,18 +62,20 @@ function SetRow({ planned, logged, isMaxEffort, onLog, onUpdate, unit }) {
             </span>
           )}
         </span>
-        <input className="input !w-20 !px-2 text-center" type="number" step="2.5" inputMode="decimal"
+        <button onClick={() => setShowExtra(!showExtra)}
+                className="inline-flex items-center gap-1 p-2 -m-2 text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
+          <Icon name={showExtra ? 'minus' : 'plus'} className="h-3 w-3" /> RPE/notes
+        </button>
+      </div>
+      <div className="mt-1.5 flex items-center gap-2">
+        <input className="input min-w-0 flex-1 !px-2 text-center" type="number" step="2.5" inputMode="decimal"
                value={weight} onChange={(e) => setWeight(e.target.value)} placeholder={unit} />
-        <span className="text-xs text-gray-400 dark:text-gray-500">×</span>
-        <input className="input !w-16 !px-2 text-center" type="number" inputMode="numeric"
+        <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500">×</span>
+        <input className="input min-w-0 flex-1 !px-2 text-center" type="number" inputMode="numeric"
                value={reps} onChange={(e) => setReps(e.target.value)} placeholder="reps" />
         <button onClick={submit} disabled={busy || weight === '' || reps === ''}
-                className={`${logged ? 'btn-secondary' : 'btn-primary'} !px-3 !py-2.5 min-w-[3.5rem] text-xs`}>
+                className={`${logged ? 'btn-secondary' : 'btn-primary'} !px-3 !py-2.5 min-w-[4.5rem] shrink-0 text-xs`}>
           {logged ? 'Update' : 'Log'}
-        </button>
-        <button onClick={() => setShowExtra(!showExtra)}
-                className="ml-auto inline-flex items-center gap-1 p-2 -m-2 text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
-          <Icon name={showExtra ? 'minus' : 'plus'} className="h-3 w-3" /> RPE/notes
         </button>
       </div>
       {showExtra && (
