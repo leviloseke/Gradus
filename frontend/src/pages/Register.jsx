@@ -33,17 +33,19 @@ export default function Register() {
         </h1>
         <form onSubmit={submit} className="space-y-4">
           <div>
-            <label className="label">Username</label>
-            <input className="input" value={form.username} onChange={set('username')} required />
+            <label className="label" htmlFor="register-username">Username</label>
+            <input id="register-username" className="input" value={form.username} autoComplete="username"
+                   onChange={set('username')} required />
           </div>
           <div>
-            <label className="label">Email</label>
-            <input className="input" type="email" value={form.email} onChange={set('email')} required />
+            <label className="label" htmlFor="register-email">Email</label>
+            <input id="register-email" className="input" type="email" value={form.email} autoComplete="email"
+                   onChange={set('email')} required />
           </div>
           <div>
-            <label className="label">Password (min 8 characters)</label>
-            <input className="input" type="password" value={form.password}
-                   onChange={set('password')} minLength={8} required />
+            <label className="label" htmlFor="register-password">Password (min 8 characters)</label>
+            <input id="register-password" className="input" type="password" value={form.password}
+                   autoComplete="new-password" onChange={set('password')} minLength={8} required />
           </div>
           {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
           <button className="btn-primary w-full" disabled={busy}>

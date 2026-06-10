@@ -1,7 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api';
 import Icon from '../components/Icon';
+import { useToast } from '../context/ToastContext';
+import { useConfirm } from '../components/ConfirmDialog';
+import { CardSkeleton } from '../components/Skeleton';
 
 const emptyForm = {
   name: '',
@@ -31,14 +34,26 @@ function templateToForm(t) {
 }
 
 export default function Exercises() {
+  const toast = useToast();
+  const confirm = useConfirm();
+  const formRef = useRef(null);
   const [templates, setTemplates] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(null); // null = closed
   const [editingId, setEditingId] = useState(null);
   const [previewWeight, setPreviewWeight] = useState(135);
   const [error, setError] = useState('');
 
   const load = () => api.get('/exercises').then(setTemplates);
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load().catch((err) => toast.error(err.message)).finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Scroll the form into view when it opens (e.g. editing a card far down the page).
+  useEffect(() => {
+    if (form) formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [form, editingId]);
 
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
@@ -71,6 +86,7 @@ export default function Exercises() {
     try {
       if (editingId) await api.put(`/exercises/${editingId}`, body);
       else await api.post('/exercises', body);
+      toast.success(editingId ? 'Exercise updated' : 'Exercise created');
       setForm(null);
       setEditingId(null);
       load();
@@ -79,10 +95,21 @@ export default function Exercises() {
     }
   };
 
-  const remove = async (id) => {
-    if (!confirm('Delete this exercise template?')) return;
-    await api.del(`/exercises/${id}`);
-    load();
+  const remove = async (id, name) => {
+    const ok = await confirm({
+      title: `Delete ${name}?`,
+      body: 'The template is removed from your library. Sets already logged with it are kept.',
+      confirmLabel: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await api.del(`/exercises/${id}`);
+      toast.success('Exercise deleted');
+      load();
+    } catch (err) {
+      toast.error(err.message);
+    }
   };
 
   const startEdit = (t) => {
@@ -108,18 +135,18 @@ export default function Exercises() {
       </div>
 
       {form && (
-        <form onSubmit={save} className="card space-y-4">
+        <form ref={formRef} onSubmit={save} className="card space-y-4">
           <h2 className="font-semibold text-gray-900 dark:text-white">
             {editingId ? 'Edit exercise' : 'New exercise template'}
           </h2>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="label">Name</label>
-              <input className="input" value={form.name} onChange={set('name')} required />
+              <label className="label" htmlFor="exercise-name">Name</label>
+              <input id="exercise-name" className="input" value={form.name} onChange={set('name')} required />
             </div>
             <div>
-              <label className="label">Category</label>
-              <input className="input" value={form.category} onChange={set('category')}
+              <label className="label" htmlFor="exercise-category">Category</label>
+              <input id="exercise-category" className="input" value={form.category} onChange={set('category')}
                      placeholder="Chest, Back, Legs…" />
             </div>
           </div>
@@ -158,36 +185,36 @@ export default function Exercises() {
 
           <div className="grid gap-3 sm:grid-cols-4">
             <div>
-              <label className="label">Working sets</label>
-              <input className="input" type="number" min="1" value={form.working_sets_count}
+              <label className="label" htmlFor="exercise-working-sets">Working sets</label>
+              <input id="exercise-working-sets" className="input" type="number" min="1" value={form.working_sets_count}
                      onChange={set('working_sets_count')} />
             </div>
             <div>
-              <label className="label">Rep range min</label>
-              <input className="input" type="number" min="1" value={form.target_rep_min}
+              <label className="label" htmlFor="exercise-rep-min">Rep range min</label>
+              <input id="exercise-rep-min" className="input" type="number" min="1" value={form.target_rep_min}
                      onChange={set('target_rep_min')} />
             </div>
             <div>
-              <label className="label">Rep range max</label>
-              <input className="input" type="number" min="1" value={form.target_rep_max}
+              <label className="label" htmlFor="exercise-rep-max">Rep range max</label>
+              <input id="exercise-rep-max" className="input" type="number" min="1" value={form.target_rep_max}
                      onChange={set('target_rep_max')} />
             </div>
             <div>
-              <label className="label">Max-effort sets (last N)</label>
-              <input className="input" type="number" min="1" value={form.max_effort_count}
+              <label className="label" htmlFor="exercise-max-effort">Max-effort sets (last N)</label>
+              <input id="exercise-max-effort" className="input" type="number" min="1" value={form.max_effort_count}
                      onChange={set('max_effort_count')} />
             </div>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="label">Weight increment on progression</label>
-              <input className="input" type="number" step="0.5" value={form.increment}
+              <label className="label" htmlFor="exercise-increment">Weight increment on progression</label>
+              <input id="exercise-increment" className="input" type="number" step="0.5" value={form.increment}
                      onChange={set('increment')} />
             </div>
             <div>
-              <label className="label">Unit</label>
-              <select className="input" value={form.unit} onChange={set('unit')}>
+              <label className="label" htmlFor="exercise-unit">Unit</label>
+              <select id="exercise-unit" className="input" value={form.unit} onChange={set('unit')}>
                 <option value="lbs">lbs</option>
                 <option value="kg">kg</option>
               </select>
@@ -203,6 +230,15 @@ export default function Exercises() {
             </button>
           </div>
         </form>
+      )}
+
+      {loading && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <CardSkeleton lines={1} />
+          <CardSkeleton lines={1} />
+          <CardSkeleton lines={1} />
+          <CardSkeleton lines={1} />
+        </div>
       )}
 
       {Object.entries(grouped).map(([group, list]) => (
@@ -234,7 +270,7 @@ export default function Exercises() {
                                 className="btn-secondary !px-2 !py-1 text-xs">
                           Edit
                         </button>
-                        <button onClick={() => remove(t.id)} className="btn-danger !px-2 !py-1 text-xs"
+                        <button onClick={() => remove(t.id, t.name)} className="btn-danger !px-2 !py-1 text-xs"
                                 aria-label={`Delete ${t.name}`}>
                           <Icon name="trash" className="h-4 w-4" />
                         </button>

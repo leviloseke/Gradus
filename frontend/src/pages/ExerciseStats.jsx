@@ -3,18 +3,34 @@ import { Link, useParams } from 'react-router-dom';
 import { api } from '../api';
 import ProgressChart from '../components/ProgressChart';
 import Icon from '../components/Icon';
+import { useToast } from '../context/ToastContext';
+import { CardSkeleton } from '../components/Skeleton';
 
 export default function ExerciseStats() {
   const { id } = useParams();
+  const toast = useToast();
   const [stats, setStats] = useState(null);
   const [history, setHistory] = useState([]);
 
   useEffect(() => {
-    api.get(`/exercises/${id}/stats`).then(setStats);
-    api.get(`/exercises/${id}/history?limit=20`).then(setHistory);
+    api.get(`/exercises/${id}/stats`).then(setStats).catch((err) => toast.error(err.message));
+    api.get(`/exercises/${id}/history?limit=20`).then(setHistory).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  if (!stats) return <p className="text-gray-400 dark:text-gray-500">Loading…</p>;
+  if (!stats) {
+    return (
+      <div className="space-y-6">
+        <CardSkeleton lines={1} />
+        <div className="grid gap-4 sm:grid-cols-3">
+          <CardSkeleton lines={1} />
+          <CardSkeleton lines={1} />
+          <CardSkeleton lines={1} />
+        </div>
+        <CardSkeleton lines={4} />
+      </div>
+    );
+  }
 
   const series = stats.series.map((s) => ({
     date: s.session_date?.slice(5, 10),

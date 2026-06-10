@@ -2,17 +2,31 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api';
 import Icon from '../components/Icon';
+import { useToast } from '../context/ToastContext';
+import { useConfirm } from '../components/ConfirmDialog';
+import { CardSkeleton } from '../components/Skeleton';
+import EmptyState from '../components/EmptyState';
 
 export default function SessionDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const toast = useToast();
+  const confirm = useConfirm();
   const [session, setSession] = useState(null);
 
   useEffect(() => {
-    api.get(`/sessions/${id}`).then(setSession);
+    api.get(`/sessions/${id}`).then(setSession).catch((err) => toast.error(err.message));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  if (!session) return <p className="text-gray-400 dark:text-gray-500">Loading…</p>;
+  if (!session) {
+    return (
+      <div className="space-y-6">
+        <CardSkeleton lines={1} />
+        <CardSkeleton lines={4} />
+      </div>
+    );
+  }
 
   const byExercise = session.sets.reduce((acc, s) => {
     (acc[s.exercise_name] = acc[s.exercise_name] || []).push(s);
@@ -20,9 +34,20 @@ export default function SessionDetail() {
   }, {});
 
   const remove = async () => {
-    if (!confirm('Delete this session and all its sets?')) return;
-    await api.del(`/sessions/${id}`);
-    navigate('/history');
+    const ok = await confirm({
+      title: 'Delete session?',
+      body: 'This session and all of its logged sets are removed permanently.',
+      confirmLabel: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await api.del(`/sessions/${id}`);
+      toast.success('Session deleted');
+      navigate('/history');
+    } catch (err) {
+      toast.error(err.message);
+    }
   };
 
   return (
@@ -52,7 +77,16 @@ export default function SessionDetail() {
       </div>
 
       {Object.keys(byExercise).length === 0 && (
-        <p className="text-sm text-gray-400 dark:text-gray-500">No sets logged.</p>
+        <EmptyState
+          icon="exercises"
+          title="No sets logged"
+          description={session.completed_at
+            ? 'This session was finished without any logged sets.'
+            : 'This session is still open — resume it to log your sets.'}
+          action={!session.completed_at && (
+            <Link to={`/workout/${session.id}`} className="btn-primary">Resume workout</Link>
+          )}
+        />
       )}
 
       {Object.entries(byExercise).map(([name, sets]) => (

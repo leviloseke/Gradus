@@ -2,27 +2,54 @@ import { useEffect, useState } from 'react';
 import { api } from '../api';
 import ProgressChart from '../components/ProgressChart';
 import Icon from '../components/Icon';
+import { useToast } from '../context/ToastContext';
+import { useConfirm } from '../components/ConfirmDialog';
+import { ListSkeleton } from '../components/Skeleton';
+import EmptyState from '../components/EmptyState';
 
 export default function BodyWeight() {
+  const toast = useToast();
+  const confirm = useConfirm();
   const [entries, setEntries] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [weight, setWeight] = useState('');
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [notes, setNotes] = useState('');
 
   const load = () => api.get('/body-weight').then(setEntries);
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load().catch((err) => toast.error(err.message)).finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const add = async (e) => {
     e.preventDefault();
-    await api.post('/body-weight', { weight: Number(weight), log_date: date, notes });
-    setWeight('');
-    setNotes('');
-    load();
+    try {
+      await api.post('/body-weight', { weight: Number(weight), log_date: date, notes });
+      setWeight('');
+      setNotes('');
+      toast.success('Weight logged');
+      load();
+    } catch (err) {
+      toast.error(err.message);
+    }
   };
 
   const remove = async (id) => {
-    await api.del(`/body-weight/${id}`);
-    load();
+    const ok = await confirm({
+      title: 'Delete entry?',
+      body: 'This body weight entry is removed permanently.',
+      confirmLabel: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await api.del(`/body-weight/${id}`);
+      toast.success('Entry deleted');
+      load();
+    } catch (err) {
+      toast.error(err.message);
+    }
   };
 
   const series = [...entries]
@@ -35,18 +62,18 @@ export default function BodyWeight() {
 
       <form onSubmit={add} className="card flex flex-col gap-3 sm:flex-row sm:items-end">
         <div>
-          <label className="label">Weight</label>
-          <input className="input !w-28" type="number" step="0.1" value={weight}
+          <label className="label" htmlFor="bw-weight">Weight</label>
+          <input id="bw-weight" className="input !w-28" type="number" step="0.1" value={weight}
                  onChange={(e) => setWeight(e.target.value)} required />
         </div>
         <div>
-          <label className="label">Date</label>
-          <input className="input" type="date" value={date}
+          <label className="label" htmlFor="bw-date">Date</label>
+          <input id="bw-date" className="input" type="date" value={date}
                  onChange={(e) => setDate(e.target.value)} required />
         </div>
         <div className="flex-1">
-          <label className="label">Notes (optional)</label>
-          <input className="input" value={notes} onChange={(e) => setNotes(e.target.value)} />
+          <label className="label" htmlFor="bw-notes">Notes (optional)</label>
+          <input id="bw-notes" className="input" value={notes} onChange={(e) => setNotes(e.target.value)} />
         </div>
         <button className="btn-primary">Log</button>
       </form>
@@ -57,6 +84,15 @@ export default function BodyWeight() {
                        lines={[{ key: 'weight', name: 'Weight', color: '#3758F9' }]} />
       </div>
 
+      {loading ? (
+        <ListSkeleton rows={4} />
+      ) : entries.length === 0 ? (
+        <EmptyState
+          icon="bodyweight"
+          title="No entries yet"
+          description="Log your body weight above to start tracking the trend."
+        />
+      ) : (
       <div className="card !p-0">
         <ul className="divide-y divide-gray-100 dark:divide-dark-3">
           {entries.map((e) => (
@@ -73,6 +109,7 @@ export default function BodyWeight() {
           ))}
         </ul>
       </div>
+      )}
     </div>
   );
 }

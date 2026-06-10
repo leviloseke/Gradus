@@ -1,27 +1,34 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api';
+import { useToast } from '../context/ToastContext';
+import { CardSkeleton } from '../components/Skeleton';
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [programs, setPrograms] = useState([]);
+  const toast = useToast();
   const [recentSessions, setRecentSessions] = useState([]);
   const [bodyWeight, setBodyWeight] = useState(null);
   const [days, setDays] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
 
   useEffect(() => {
-    api.get('/programs').then(async (ps) => {
-      setPrograms(ps);
-      const all = await Promise.all(
-        ps.map((p) => api.get(`/programs/${p.id}/days`).then(
-          (ds) => ds.map((d) => ({ ...d, program_name: p.name, program_id: p.id }))
-        ))
-      );
-      setDays(all.flat());
-    });
-    api.get('/sessions?limit=5').then(setRecentSessions);
-    api.get('/body-weight?limit=1').then((rows) => setBodyWeight(rows[0] || null));
+    Promise.all([
+      api.get('/programs').then(async (ps) => {
+        const all = await Promise.all(
+          ps.map((p) => api.get(`/programs/${p.id}/days`).then(
+            (ds) => ds.map((d) => ({ ...d, program_name: p.name, program_id: p.id }))
+          ))
+        );
+        setDays(all.flat());
+      }),
+      api.get('/sessions?limit=5').then(setRecentSessions),
+      api.get('/body-weight?limit=1').then((rows) => setBodyWeight(rows[0] || null)),
+    ])
+      .catch((err) => toast.error(err.message))
+      .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Suggest the day after the most recently trained one in its program
@@ -41,10 +48,25 @@ export default function Dashboard() {
     try {
       const session = await api.post('/sessions', { workout_day_id: dayId });
       navigate(`/workout/${session.id}`);
+    } catch (err) {
+      toast.error(`Could not start workout — ${err.message}`);
     } finally {
       setStarting(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+        <CardSkeleton lines={1} />
+        <div className="grid gap-6 md:grid-cols-2">
+          <CardSkeleton lines={3} />
+          <CardSkeleton lines={3} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

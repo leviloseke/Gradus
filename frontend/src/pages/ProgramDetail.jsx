@@ -2,9 +2,15 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../api';
 import Icon from '../components/Icon';
+import { useToast } from '../context/ToastContext';
+import { useConfirm } from '../components/ConfirmDialog';
+import { CardSkeleton } from '../components/Skeleton';
+import EmptyState from '../components/EmptyState';
 
 export default function ProgramDetail() {
   const { id } = useParams();
+  const toast = useToast();
+  const confirm = useConfirm();
   const [program, setProgram] = useState(null);
   const [templates, setTemplates] = useState([]);
   const [dayName, setDayName] = useState('');
@@ -14,51 +20,87 @@ export default function ProgramDetail() {
   const load = useCallback(() => api.get(`/programs/${id}`).then(setProgram), [id]);
 
   useEffect(() => {
-    load();
-    api.get('/exercises').then(setTemplates);
+    load().catch((err) => toast.error(err.message));
+    api.get('/exercises').then(setTemplates).catch((err) => toast.error(err.message));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [load]);
 
-  if (!program) return <p className="text-gray-400 dark:text-gray-500">Loading…</p>;
+  if (!program) {
+    return (
+      <div className="space-y-6">
+        <CardSkeleton lines={1} />
+        <CardSkeleton lines={3} />
+      </div>
+    );
+  }
 
   const addDay = async (e) => {
     e.preventDefault();
-    await api.post(`/programs/${id}/days`, { name: dayName });
-    setDayName('');
-    load();
+    try {
+      await api.post(`/programs/${id}/days`, { name: dayName });
+      setDayName('');
+      load();
+    } catch (err) {
+      toast.error(err.message);
+    }
   };
 
-  const removeDay = async (dayId) => {
-    if (!confirm('Delete this day?')) return;
-    await api.del(`/programs/${id}/days/${dayId}`);
-    load();
+  const removeDay = async (dayId, name) => {
+    const ok = await confirm({
+      title: `Delete ${name}?`,
+      body: 'The day and its exercise list are removed. Logged sessions are kept.',
+      confirmLabel: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await api.del(`/programs/${id}/days/${dayId}`);
+      toast.success('Day deleted');
+      load();
+    } catch (err) {
+      toast.error(err.message);
+    }
   };
+
+  const sortedDays = [...program.days].sort((a, b) => a.order - b.order);
 
   const moveDay = async (day, dir) => {
-    const sorted = [...program.days].sort((a, b) => a.order - b.order);
-    const idx = sorted.findIndex((d) => d.id === day.id);
-    const swap = sorted[idx + dir];
+    const idx = sortedDays.findIndex((d) => d.id === day.id);
+    const swap = sortedDays[idx + dir];
     if (!swap) return;
-    await Promise.all([
-      api.put(`/programs/${id}/days/${day.id}`, { order: swap.order }),
-      api.put(`/programs/${id}/days/${swap.id}`, { order: day.order }),
-    ]);
-    load();
+    try {
+      await Promise.all([
+        api.put(`/programs/${id}/days/${day.id}`, { order: swap.order }),
+        api.put(`/programs/${id}/days/${swap.id}`, { order: day.order }),
+      ]);
+      load();
+    } catch (err) {
+      toast.error(err.message);
+    }
   };
 
   const addExercise = async (e, dayId) => {
     e.preventDefault();
-    await api.post(`/programs/${id}/days/${dayId}/exercises`, {
-      exercise_template_id: pick.exercise_template_id,
-      rest_seconds: Number(pick.rest_seconds) || 120,
-    });
-    setAdding(null);
-    setPick({ exercise_template_id: '', rest_seconds: 120 });
-    load();
+    try {
+      await api.post(`/programs/${id}/days/${dayId}/exercises`, {
+        exercise_template_id: pick.exercise_template_id,
+        rest_seconds: Number(pick.rest_seconds) || 120,
+      });
+      setAdding(null);
+      setPick({ exercise_template_id: '', rest_seconds: 120 });
+      load();
+    } catch (err) {
+      toast.error(err.message);
+    }
   };
 
   const removeExercise = async (dayId, dayExerciseId) => {
-    await api.del(`/programs/${id}/days/${dayId}/exercises/${dayExerciseId}`);
-    load();
+    try {
+      await api.del(`/programs/${id}/days/${dayId}/exercises/${dayExerciseId}`);
+      load();
+    } catch (err) {
+      toast.error(err.message);
+    }
   };
 
   return (
@@ -73,14 +115,22 @@ export default function ProgramDetail() {
 
       <form onSubmit={addDay} className="card flex items-end gap-3">
         <div className="flex-1">
-          <label className="label">New workout day</label>
-          <input className="input" value={dayName} placeholder="Push Day"
+          <label className="label" htmlFor="day-name">New workout day</label>
+          <input id="day-name" className="input" value={dayName} placeholder="Push Day"
                  onChange={(e) => setDayName(e.target.value)} required />
         </div>
         <button className="btn-primary">Add Day</button>
       </form>
 
-      {program.days.map((day, i) => (
+      {sortedDays.length === 0 && (
+        <EmptyState
+          icon="history"
+          title="No workout days yet"
+          description="Add a day above (like Push Day or Leg Day), then assign exercises to it."
+        />
+      )}
+
+      {sortedDays.map((day, i) => (
         <div key={day.id} className="card">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -88,15 +138,17 @@ export default function ProgramDetail() {
               {day.name}
             </h2>
             <div className="flex gap-2">
-              <button onClick={() => moveDay(day, -1)} className="btn-secondary !px-2 !py-1 text-xs"
+              <button onClick={() => moveDay(day, -1)} disabled={i === 0}
+                      className="btn-secondary !px-2 !py-1 text-xs disabled:cursor-not-allowed disabled:opacity-40"
                       aria-label="Move day up">
                 <Icon name="chevron-up" className="h-4 w-4" />
               </button>
-              <button onClick={() => moveDay(day, 1)} className="btn-secondary !px-2 !py-1 text-xs"
+              <button onClick={() => moveDay(day, 1)} disabled={i === sortedDays.length - 1}
+                      className="btn-secondary !px-2 !py-1 text-xs disabled:cursor-not-allowed disabled:opacity-40"
                       aria-label="Move day down">
                 <Icon name="chevron-down" className="h-4 w-4" />
               </button>
-              <button onClick={() => removeDay(day.id)} className="btn-danger">Delete</button>
+              <button onClick={() => removeDay(day.id, day.name)} className="btn-danger">Delete</button>
             </div>
           </div>
 
@@ -126,8 +178,8 @@ export default function ProgramDetail() {
             <form onSubmit={(e) => addExercise(e, day.id)}
                   className="flex flex-col gap-2 sm:flex-row sm:items-end">
               <div className="flex-1">
-                <label className="label">Exercise</label>
-                <select className="input" required value={pick.exercise_template_id}
+                <label className="label" htmlFor={`pick-exercise-${day.id}`}>Exercise</label>
+                <select id={`pick-exercise-${day.id}`} className="input" required value={pick.exercise_template_id}
                         onChange={(e) => setPick({ ...pick, exercise_template_id: e.target.value })}>
                   <option value="">Choose…</option>
                   {templates.map((t) => (
@@ -138,8 +190,8 @@ export default function ProgramDetail() {
                 </select>
               </div>
               <div>
-                <label className="label">Rest (s)</label>
-                <input className="input w-24" type="number" min="0" value={pick.rest_seconds}
+                <label className="label" htmlFor={`pick-rest-${day.id}`}>Rest (s)</label>
+                <input id={`pick-rest-${day.id}`} className="input w-24" type="number" min="0" value={pick.rest_seconds}
                        onChange={(e) => setPick({ ...pick, rest_seconds: e.target.value })} />
               </div>
               <button className="btn-primary">Add</button>

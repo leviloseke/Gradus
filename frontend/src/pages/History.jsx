@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api';
 import Icon from '../components/Icon';
+import { useToast } from '../context/ToastContext';
+import { ListSkeleton } from '../components/Skeleton';
+import EmptyState from '../components/EmptyState';
 
 function CalendarView({ sessions, month, setMonth }) {
   const byDate = useMemo(() => {
@@ -42,6 +45,11 @@ function CalendarView({ sessions, month, setMonth }) {
       <div className="grid grid-cols-7 gap-1 text-center text-xs text-gray-400 dark:text-gray-500">
         {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => <div key={i}>{d}</div>)}
       </div>
+      {sessions.length === 0 && (
+        <p className="mt-3 text-center text-sm text-gray-400 dark:text-gray-500">
+          No workouts logged for the months shown.
+        </p>
+      )}
       <div className="mt-1 grid grid-cols-7 gap-1">
         {cells.map((d, i) => {
           const daySessions = d ? byDate[fmt(d)] || [] : [];
@@ -64,7 +72,9 @@ function CalendarView({ sessions, month, setMonth }) {
 }
 
 export default function History() {
+  const toast = useToast();
   const [sessions, setSessions] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [programs, setPrograms] = useState([]);
   const [programFilter, setProgramFilter] = useState('');
   const [view, setView] = useState('list');
@@ -74,12 +84,16 @@ export default function History() {
   });
 
   useEffect(() => {
-    api.get('/programs').then(setPrograms);
+    api.get('/programs').then(setPrograms).catch(() => {});
   }, []);
 
   useEffect(() => {
     const qs = programFilter ? `?program_id=${programFilter}&limit=500` : '?limit=500';
-    api.get(`/sessions${qs}`).then(setSessions);
+    api.get(`/sessions${qs}`)
+      .then(setSessions)
+      .catch((err) => toast.error(err.message))
+      .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [programFilter]);
 
   return (
@@ -87,7 +101,7 @@ export default function History() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">History</h1>
         <div className="flex items-center gap-2">
-          <select className="input !w-auto" value={programFilter}
+          <select className="input !w-auto" value={programFilter} aria-label="Filter by program"
                   onChange={(e) => setProgramFilter(e.target.value)}>
             <option value="">All programs</option>
             {programs.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -103,10 +117,19 @@ export default function History() {
         </div>
       </div>
 
-      {view === 'calendar' ? (
+      {loading ? (
+        <ListSkeleton rows={5} />
+      ) : view === 'calendar' ? (
         <CalendarView sessions={sessions} month={month} setMonth={setMonth} />
       ) : sessions.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">No sessions yet.</p>
+        <EmptyState
+          icon="history"
+          title="No sessions yet"
+          description={programFilter
+            ? 'No workouts logged for this program yet.'
+            : 'Your finished workouts will show up here.'}
+          action={<Link to="/" className="btn-primary">Start your first workout</Link>}
+        />
       ) : (
         <div className="card !p-0">
           <ul className="divide-y divide-gray-100 dark:divide-dark-3">
