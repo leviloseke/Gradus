@@ -4,10 +4,13 @@ import { api } from '../api';
 import RestTimer from '../components/RestTimer';
 import ProgressionBanner from '../components/ProgressionBanner';
 import Icon from '../components/Icon';
+import { useToast } from '../context/ToastContext';
+import { useConfirm } from '../components/ConfirmDialog';
 
 const round = (w) => Math.round(w / 2.5) * 2.5;
 
 function SetRow({ planned, logged, isMaxEffort, onLog, onUpdate, unit }) {
+  const toast = useToast();
   const [weight, setWeight] = useState(planned.weight ?? '');
   const [reps, setReps] = useState(planned.reps ?? '');
   const [rpe, setRpe] = useState('');
@@ -33,6 +36,8 @@ function SetRow({ planned, logged, isMaxEffort, onLog, onUpdate, unit }) {
       };
       if (logged) await onUpdate(logged.id, body);
       else await onLog(body);
+    } catch (err) {
+      toast.error(`Set not saved — ${err.message}`);
     } finally {
       setBusy(false);
     }
@@ -63,11 +68,11 @@ function SetRow({ planned, logged, isMaxEffort, onLog, onUpdate, unit }) {
         <input className="input !w-16 !px-2 text-center" type="number" inputMode="numeric"
                value={reps} onChange={(e) => setReps(e.target.value)} placeholder="reps" />
         <button onClick={submit} disabled={busy || weight === '' || reps === ''}
-                className={logged ? 'btn-secondary !px-3 !py-1.5 text-xs' : 'btn-primary !px-3 !py-1.5 text-xs'}>
+                className={`${logged ? 'btn-secondary' : 'btn-primary'} !px-3 !py-2.5 min-w-[3.5rem] text-xs`}>
           {logged ? 'Update' : 'Log'}
         </button>
         <button onClick={() => setShowExtra(!showExtra)}
-                className="ml-auto inline-flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
+                className="ml-auto inline-flex items-center gap-1 p-2 -m-2 text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
           <Icon name={showExtra ? 'minus' : 'plus'} className="h-3 w-3" /> RPE/notes
         </button>
       </div>
@@ -86,6 +91,8 @@ function SetRow({ planned, logged, isMaxEffort, onLog, onUpdate, unit }) {
 export default function WorkoutSession() {
   const { sessionId } = useParams();
   const navigate = useNavigate();
+  const toast = useToast();
+  const confirm = useConfirm();
   const [plan, setPlan] = useState(null);
   const [loggedSets, setLoggedSets] = useState([]);
   const [setsLoaded, setSetsLoaded] = useState(false);
@@ -153,12 +160,33 @@ export default function WorkoutSession() {
   const toggleDeload = async () => {
     const next = !isDeload;
     setIsDeload(next);
-    await api.put(`/sessions/${sessionId}`, { is_deload: next });
+    try {
+      await api.put(`/sessions/${sessionId}`, { is_deload: next });
+    } catch (err) {
+      setIsDeload(!next);
+      toast.error(`Could not update deload — ${err.message}`);
+    }
   };
 
+  const totalWorking = exercises.reduce((n, e) => n + e.working_sets_count, 0);
+  const doneWorking = loggedSets.filter((l) => l.set_type === 'working').length;
+
   const finish = async () => {
-    await api.put(`/sessions/${sessionId}`, { completed: true });
-    navigate(`/history/${sessionId}`);
+    const remaining = totalWorking - doneWorking;
+    if (remaining > 0) {
+      const ok = await confirm({
+        title: 'Finish workout?',
+        body: `${remaining} working set${remaining === 1 ? '' : 's'} not logged yet.`,
+        confirmLabel: 'Finish anyway',
+      });
+      if (!ok) return;
+    }
+    try {
+      await api.put(`/sessions/${sessionId}`, { completed: true });
+      navigate(`/history/${sessionId}`);
+    } catch (err) {
+      toast.error(`Could not finish session — ${err.message}`);
+    }
   };
 
   const deloadFactor = isDeload ? 0.9 : 1;
@@ -171,8 +199,6 @@ export default function WorkoutSession() {
     );
   }
 
-  const totalWorking = exercises.reduce((n, e) => n + e.working_sets_count, 0);
-  const doneWorking = loggedSets.filter((l) => l.set_type === 'working').length;
   const progressPct = totalWorking ? Math.min(doneWorking / totalWorking, 1) * 100 : 0;
 
   const ex = exercises[current];
@@ -186,6 +212,7 @@ export default function WorkoutSession() {
           <button
             onClick={() => navigate('/')}
             title="Leave workout (progress is saved)"
+            aria-label="Leave workout (progress is saved)"
             className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-dark-2 dark:hover:text-white"
           >
             <Icon name="chevron-left" className="h-5 w-5" />
@@ -350,20 +377,26 @@ export default function WorkoutSession() {
             >
               <Icon name="chevron-left" className="h-4 w-4" /> Prev
             </button>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center">
               {exercises.map((e, i) => (
                 <button
                   key={e.id}
                   onClick={() => setCurrent(i)}
                   title={e.name}
-                  className={`h-2.5 rounded-full transition-all ${
-                    i === current
-                      ? 'w-6 bg-primary'
-                      : isComplete(e)
-                        ? 'w-2.5 bg-green-500'
-                        : 'w-2.5 bg-gray-300 dark:bg-dark-3'
-                  }`}
-                />
+                  aria-label={`Go to ${e.name}`}
+                  aria-current={i === current}
+                  className="flex items-center justify-center p-2"
+                >
+                  <span
+                    className={`h-2.5 rounded-full transition-all ${
+                      i === current
+                        ? 'w-6 bg-primary'
+                        : isComplete(e)
+                          ? 'w-2.5 bg-green-500'
+                          : 'w-2.5 bg-gray-300 dark:bg-dark-3'
+                    }`}
+                  />
+                </button>
               ))}
             </div>
             {last ? (

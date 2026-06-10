@@ -46,7 +46,7 @@ export default function RestTimer({ seconds, onDone, onSkip }) {
   const pct = seconds > 0 ? Math.max(remaining, 0) / seconds : 0;
 
   return (
-    <div className="fixed inset-x-0 bottom-20 z-30 mx-auto max-w-md px-4">
+    <div className="fixed inset-x-0 bottom-20 z-30 mx-auto max-w-md px-4" role="timer" aria-live="off">
       <div className="flex items-center gap-3 rounded-xl border border-primary-200 bg-white p-3 shadow-lg dark:border-primary-500/30 dark:bg-dark-2">
         <div className="text-2xl font-bold tabular-nums text-primary-700 dark:text-primary-400">
           {mm}:{ss}
@@ -59,11 +59,12 @@ export default function RestTimer({ seconds, onDone, onSkip }) {
         </div>
         <button
           onClick={() => setRemaining((r) => r + 30)}
-          className="btn-secondary !px-2 !py-1 text-xs"
+          aria-label="Add 30 seconds of rest"
+          className="btn-secondary !px-3 !py-2 text-xs"
         >
           +30s
         </button>
-        <button onClick={onSkip} className="btn-secondary !px-2 !py-1 text-xs">
+        <button onClick={onSkip} aria-label="Skip rest timer" className="btn-secondary !px-3 !py-2 text-xs">
           Skip
         </button>
       </div>
