@@ -15,7 +15,7 @@ docker compose -f docker-compose.prebuilt.yml up -d
 
 Open http://localhost:3000. To update later: `docker compose -f docker-compose.prebuilt.yml pull && docker compose -f docker-compose.prebuilt.yml up -d`.
 
-Images: [`ghcr.io/leviloseke/gradus-frontend`](https://github.com/leviloseke/Gradus/pkgs/container/gradus-frontend) · [`ghcr.io/leviloseke/gradus-backend`](https://github.com/leviloseke/Gradus/pkgs/container/gradus-backend) — tagged `latest`, plus `vX.Y.Z` and commit SHAs for pinning.
+Image: [`ghcr.io/leviloseke/gradus`](https://github.com/leviloseke/Gradus/pkgs/container/gradus) — tagged `latest`, plus `vX.Y.Z` and commit SHAs for pinning.
 
 ## Quick start (from source)
 
@@ -24,8 +24,8 @@ cp .env.example .env   # set JWT_SECRET and a real POSTGRES_PASSWORD
 docker-compose up --build
 ```
 
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:5001
+- App (frontend + API in one container): http://localhost:3000
+- API also reachable at http://localhost:5001 (used by the Vite dev proxy)
 - Postgres: localhost:5432
 
 The database schema migrates and the default exercise library seeds automatically on backend startup.
@@ -59,8 +59,8 @@ npm run dev
 
 ## Stack
 
-- **Frontend** — React + Vite + TailwindCSS, served by Nginx (proxies `/api` to the backend)
-- **Backend** — Node.js / Express
+- **Frontend** — React + Vite + TailwindCSS
+- **Backend** — Node.js / Express (also serves the built frontend in production — one container, one port)
 - **Database** — PostgreSQL 15
 - **Auth** — JWT in httpOnly cookies, bcrypt password hashing, per-user data isolation
 
@@ -70,7 +70,7 @@ Auth (`/api/auth/*`), programs and days (`/api/programs/*`), exercise templates 
 
 ## Production deployment
 
-Gradus is designed to run on a home server or VPS behind a TLS-terminating reverse proxy pointed at the frontend container (port 3000). The frontend's nginx already proxies `/api` to the backend, so the proxy only needs one upstream.
+Gradus is designed to run on a home server or VPS behind a TLS-terminating reverse proxy pointed at the app container (port 3000). One container serves both the frontend and the API, so the proxy only needs one upstream.
 
 **Caddy** (automatic HTTPS):
 

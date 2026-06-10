@@ -1,12 +1,12 @@
-# Run Gradus from prebuilt images — no source checkout needed.
+# Run Gradus from the prebuilt image — no source checkout needed.
 #
 #   curl -O https://raw.githubusercontent.com/leviloseke/Gradus/main/docker-compose.prebuilt.yml
 #   curl -o .env https://raw.githubusercontent.com/leviloseke/Gradus/main/.env.example
 #   # edit .env: set POSTGRES_PASSWORD and JWT_SECRET (openssl rand -hex 32)
 #   docker compose -f docker-compose.prebuilt.yml up -d
 #
-# App is served at http://localhost:3000 — the frontend's nginx proxies /api
-# to the backend, so only one port needs exposing (or reverse-proxying).
+# App is served at http://localhost:3000 — one container serves both the
+# frontend and the API, so only one port needs exposing (or reverse-proxying).
 
 services:
   postgres:
@@ -24,10 +24,8 @@ services:
       timeout: 5s
       retries: 10
 
-  # The frontend's nginx resolves the API upstream by this service name —
-  # keep it named "backend".
-  backend:
-    image: ghcr.io/leviloseke/gradus-backend:latest
+  app:
+    image: ghcr.io/leviloseke/gradus:latest
     restart: unless-stopped
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-gradus}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-gradus}
@@ -39,14 +37,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-
-  frontend:
-    image: ghcr.io/leviloseke/gradus-frontend:latest
-    restart: unless-stopped
-    depends_on:
-      - backend
     ports:
-      - "3000:80"
+      - "3000:5000"
 
 volumes:
   postgres_data:
