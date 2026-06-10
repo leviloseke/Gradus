@@ -23,6 +23,7 @@ services:
       DATABASE_URL: postgres://${POSTGRES_USER:-gradus}:${POSTGRES_PASSWORD:-gradus}@postgres:5432/${POSTGRES_DB:-gradus}
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
       NODE_ENV: production
       PORT: 5000
     depends_on:
